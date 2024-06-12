@@ -3,7 +3,7 @@ LDLIBS=-lpcap
 all: tcp-block
 
 
-main.o: mac.h ethhdr.h tcphdr.h iphdr.h main.cpp
+main.o: mac.h ip.h ethhdr.h tcphdr.h iphdr.h main.cpp
 
 tcphdr.o: tcphdr.h tcphdr.cpp
 

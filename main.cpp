@@ -137,6 +137,7 @@ int main(int argc, char* argv[]) {
 						//"strstr(tcp_payload, pattern)" -> Check whether "tcp_payload" has "pattern" or not
 						//"(strncmp(tcp_payload, "GET ", 4) == 0)" -> Check whether Request Method is GET or not
 
+
 						///// Forward Block Packet (To Server)
 						uint32_t fbp_ethernet_pkt_len = sizeof(EthHdr) + ip_hdr_len + tcp_hdr_len;
 						//Define length
@@ -194,16 +195,6 @@ int main(int argc, char* argv[]) {
 
 
 						///// Backward Block Packet (To Client)
-						int raw_sock = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
-                    	int set_val = 1;
-                    	setsockopt(raw_sock, IPPROTO_IP, IP_HDRINCL, (char *)&set_val, sizeof(set_val));
-
-						struct sockaddr_in raw_addr;
-						raw_addr.sin_family = AF_INET;
-						raw_addr.sin_port = tcp_hdr->s_port;
-						raw_addr.sin_addr.s_addr = (uint32_t)ip_hdr->sip_;
-						//Use raw socket
-
 						uint16_t bbp_ip_hdr_len = sizeof(IpHdr);
 						uint16_t bbp_tcp_hdr_len = sizeof(TcpHdr);
 
@@ -264,6 +255,22 @@ int main(int argc, char* argv[]) {
 						bbp_tcp_hdr->checksum = (bbp_tcp_checksum & 0xffff) + (bbp_tcp_checksum >> 16);
 						// "(bbp_tcp_checksum & 0xffff)" makes "bbp_tcp_checksum" 16Bit.
 						// "+ (bbp_tcp_checksum >> 16)" -> Wrapped around if "bbp_tcp_checksum" has carry
+
+
+						int raw_sock = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+						// AF_INET -> Ip4
+						// SOCK_RAW -> Low-level socket control protocol
+                    	char optval = 0x01;
+                    	setsockopt(raw_sock, IPPROTO_IP, IP_HDRINCL, &optval, sizeof(optval));
+						//Set "raw_sock"'s option value by setsockopt()
+						//Set level as "IPPROTO_IP" because of "IP_HDRINCL"
+						//"IP_HDRINCL" -> Include IP Header when sending data
+
+						struct sockaddr_in raw_addr;
+						raw_addr.sin_family = AF_INET;
+						raw_addr.sin_port = tcp_hdr->s_port;
+						raw_addr.sin_addr.s_addr = (uint32_t)ip_hdr->sip_;
+						//Use raw socket
 						
 						if (sendto(raw_sock, bbp_ip_pkt, bbp_ip_pkt_len, 0, (struct sockaddr *)&raw_addr, sizeof(raw_addr)) < 0){
 							perror("Sending Backward Block Packet Failed..\n");
